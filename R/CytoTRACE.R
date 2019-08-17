@@ -193,3 +193,10 @@ cytoTRACE <- function(mat, batch = NULL, enableFast = FALSE,
   message("Done")
   return(list(CytoTRACE = cytotrace, GCS = gcs, GCSgenes = sort(ds2, decreasing = T), Counts = counts, filteredCells = filter))
 }
+
+
+
+
+
+
+

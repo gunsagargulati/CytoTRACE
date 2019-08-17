@@ -14,5 +14,6 @@ Imports:
         HiClimR (>= 1.2.3),
         ccaPP (>= 0.3.2),
         nnls (>= 1.4),
-        parallel
+        parallel,
+        reticulate (>= 1.10)
 RoxygenNote: 6.1.1
