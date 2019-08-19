@@ -1,23 +1,39 @@
-#' @title Run CytoTRACE (Cellular (Cyto) Trajectory Reconstruction Analysis using gene Counts and Expression)
+#' @title cytoTRACE
 #'
-#' @description This function generates single-cell predictions of differentiation using CytoTRACE.
-#' It takes in a matrix of gene expression values where columns are cells and rows are genes.
+#' @description This function generates single-cell predictions of differentiation status from scRNA-seq data.
+#' It takes in a matrix of gene expression values where columns are cells and rows are genes.\cr\cr
 #' (Optional) Technical batches can be corrected with ComBat by inputting a character vector of batch
-#' annotations matching the number of columns (cells) in the matrix. Furthermore, for very analysis of
-#' large datasets, users can increase the speed performance by enabling a sub-sampling approach for calculation
+#' annotations matching the number of columns (cells) in the matrix. Furthermore, for the analysis of
+#' large datasets (>5,000 cells), users can increase the speed performance by enabling a sub-sampling approach for calculation
 #' and using multiple cores
 #'
 #' @param mat matrix of gene expression values where columns are cells and rows are genes
-#' @param batch character vector of length equal to the number of columns (cells) in the matrix (default: NULL)
-#' @param enableFast boolean indicating whether or not to run CytoTRACE in 'fast mode' (default: FALSE)
-#' @param ncores integer indicating the number of cores to utilize when enableFast = TRUE (default: 1)
-#' @param subsamplesize integer indicating the number of cells to subsample when enableFast = TRUE (default: 1000)
+#' @param batch character vector of length equal to the number of columns (cells) in the matrix
+#' @param enableFast boolean indicating whether or not to run CytoTRACE in 'fast mode'
+#' @param ncores integer indicating the number of cores to utilize when enableFast = TRUE
+#' @param subsamplesize integer indicating the number of cells to subsample when enableFast = TRUE
 #'
-#' @return a list containing (1) CytoTRACE: a numeric vector of the predicted differentiation by CytoTRACE,
-#' (2) GCS: a numeric vector of the gene counts signature (geometric mean of the top 200 genes associated with gene counts),
-#' (3) GCSgenes: an numeric vector of the Pearson correlation of each gene with gene counts, ordered from highest to lowest,
-#' (4) Counts: a numeric vector of the number of genes expressed per single cell, and
-#' (5) filteredCells = a character vector of the names of single cells (columns) that were filtered due to poor quality.
+#' @return a list containing
+#' \itemize{
+#' \item CytoTRACE: a numeric vector of the predicted ordering of single cells by differentiation status
+#' \item GCS: a numeric vector of the gene counts signature (geometric mean of the top 200 genes associated with gene counts)
+#' \item GCSgenes: a numeric vector of the Pearson correlation of each gene with gene counts, ordered from highest to lowest
+#' \item Counts: a numeric vector of the number of genes expressed per single cell (gene counts)
+#' \item filteredCells = a character vector of the names of single cells (columns) that were filtered due to poor quality.
+#' }
+#'
+#' @author Gunsagar Gulati <cytotrace@gmail.com>
+#'
+#' @seealso https://cytotrace.stanford.edu
+#'
+#' @references https://doi.org/10.1101/649848
+#'
+#' @examples
+#' #Use the bone marrow 10x scRNA-seq dataset to run CytoTRACE
+#' results <- cytoTRACE(marrow_10x_expr)
+#'
+#' #Run this dataset on fast mode using 8 cores
+#' results <- cytoTRACE(marrow_10x_expr, enableFast = TRUE, ncores = 8)
 #'
 #' @export
 

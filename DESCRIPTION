@@ -10,7 +10,7 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports:
-        sva (>= 3.30.1),
+        sva (>= 3.24.4),
         HiClimR (>= 1.2.3),
         ccaPP (>= 0.3.2),
         nnls (>= 1.4),

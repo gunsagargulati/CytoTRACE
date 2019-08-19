@@ -1,25 +1,42 @@
-#' @title Run CytoTRACE (Cellular (Cyto) Trajectory Reconstruction Analysis using gene Counts and Expression)
+#' @title integrated CytoTRACE (iCytoTRACE)
 #'
-#' @description This function generates single-cell predictions of differentiation using CytoTRACE.
-#' It takes in a matrix of gene expression values where columns are cells and rows are genes.
-#' (Optional) Technical batches can be corrected with ComBat by inputting a character vector of batch
-#' annotations matching the number of columns (cells) in the matrix. Furthermore, for very analysis of
-#' large datasets, users can increase the speed performance by enabling a sub-sampling approach for calculation
-#' and using multiple cores
+#' @description This function generates single-cell predictions of differentiation status
+#' across multiple, heterogeneous scRNA-seq batches/datasets. This implementation leverages
+#' mutual nearest neighbor and Gaussian kernel normalization techniques from Scanorama to merge datasets.
+#' It takes in a list of gene expression matrices where columns are cells and rows are genes and outputs
+#' integrated gene counts, gene counts signature (GCS), CytoTRACE, and the correct gene expression matrix.
 #'
-#' @param mat matrix of gene expression values where columns are cells and rows are genes
-#' @param batch character vector of length equal to the number of columns (cells) in the matrix (default: NULL)
-#' @param enableFast boolean indicating whether or not to run CytoTRACE in 'fast mode' (default: FALSE)
-#' @param ncores integer indicating the number of cores to utilize when enableFast = TRUE (default: 1)
-#' @param subsamplesize integer indicating the number of cells to subsample when enableFast = TRUE (default: 1000)
 #'
-#' @return a list containing (1) CytoTRACE: a numeric vector of the predicted differentiation by CytoTRACE,
-#' (2) GCS: a numeric vector of the gene counts signature (geometric mean of the top 200 genes associated with gene counts),
-#' (3) GCSgenes: an numeric vector of the Pearson correlation of each gene with gene counts, ordered from highest to lowest,
-#' (4) Counts: a numeric vector of the number of genes expressed per single cell, and
-#' (5) filteredCells = a character vector of the names of single cells (columns) that were filtered due to poor quality.
+#' @param datasets list of gene expression matrices where columns are cells and rows are genes
 #'
+#' @return a list containing
+#' \itemize{
+#' \item data: a matrix (genes by single cells) of the corrected gene expression values from Scanorama
+#' \item CytoTRACE: a numeric vector of the predicted ordering of merged single cells by differentiation status
+#' \item GCS: a numeric vector of the merged gene counts signature (geometric mean of the top 200 genes associated with gene counts)
+#' \item Counts: a numeric vector of the corrected number of genes expressed per single cell (gene counts)
+#' \item coord: a matrix containing the coordinates for the merged low-dimensional embedding (number of cells x 100 <i>t</i>-SNE components)
+#' \item filteredCells = a character vector of the names of single cells (columns) that were filtered due to poor quality.
+#' }
+#'
+#' @author Gunsagar Gulati <cytotrace@gmail.com>
+#'
+#' @seealso https://cytotrace.stanford.edu
+#'
+#' @references https://doi.org/10.1101/649848
+#'
+#' @examples
+#'
+#' #Create a list containing two bone marrow scRNA-seq datasets profiled on different platforms, 10x and Smart-seq2
+#' datasets <- list(marrow_10x_expr, marrow_plate_expr)
+#' \n
+#' #Run iCytoTRACE
+#' \dontrun{
+#' results <- iCytoTRACE(datasets)
+#' }
 #' @export
+
+
 
 iCytoTRACE <- function(datasets) {
   if(!have_scanoramaCT | !have_numpy){
@@ -157,7 +174,7 @@ iCytoTRACE <- function(datasets) {
   m <- m[!rm1,]
 
   #filter
-  filter <- !(unlist(lapply(datasets, colnames)) %in% unlist(lapply(processedMats, rownames))[!rm1])
+  filteredCells <- !(unlist(lapply(datasets, colnames)) %in% unlist(lapply(processedMats, rownames))[!rm1])
 
-  return(list(data = mat2, Counts = countsNormCorrected, GCS= gcs2, CytoTRACE = cytotrace, coord = m, filter = filter))
+  return(list(data = mat2, CytoTRACE = cytotrace, GCS= gcs2, Counts = countsNormCorrected, coord = m, filteredCells = filter))
 }
