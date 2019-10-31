@@ -64,7 +64,8 @@ cytoTRACE <- function(mat, batch = NULL, enableFast = FALSE,
 
   chunk <- round(ncol(mat)/size)
   subsamples <- split(1:ncol(mat), sample(factor(1:ncol(mat) %% chunk)))
-  message(paste("CytoTRACE will be run on", chunk, "sub-sample(s) of approximately", round(mean(unlist(lapply(subsamples, length)))), "cells each using", min(chunk, ncores), "core(s)"))
+  message(paste("CytoTRACE will be run on", chunk, "sub-sample(s) of approximately",
+                round(mean(unlist(lapply(subsamples, length)))), "cells each using", min(chunk, ncores),"/", ncores, "core(s)"))
 
   message(paste("Pre-processing data and generating similarity matrix..."))
   batches <- parallel::mclapply(subsamples, mc.cores = min(chunk, ncores), function(subsample){
@@ -206,6 +207,9 @@ cytoTRACE <- function(mat, batch = NULL, enableFast = FALSE,
 
   cytotrace <- unlist(cytotrace)
   names(cytotrace) <- names(gcs) <- names(counts) <- colnames(mat2)
+  cytotrace <- cytotrace[colnames(a1)]; gcs <- gcs[colnames(a1)]; counts <- counts[colnames(a1)]
+  names(cytotrace) <- names(gcs) <- names(counts) <- colnames(a1)
+
   message("Done")
   return(list(CytoTRACE = cytotrace, GCS = gcs, GCSgenes = sort(ds2, decreasing = T), Counts = counts, filteredCells = filter))
 }
