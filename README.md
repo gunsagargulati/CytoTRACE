@@ -90,6 +90,6 @@ The ouput is a list object containing numeric values for the merged CytoTRACE, G
 
 ## Questions, comments, and concerns:
 
-We are constantly improving the software and welcome all feedback from the community. For all questions, comments, or concerns regarding the CytoTRACE code and manuscript, please contact us at cytotrace@gmail.com. Also, please feel free to raise issues or contribute to the code base via GitHub. 
+We are constantly improving the software and welcome all feedback from the community. For all questions, comments, or concerns regarding the CytoTRACE code and manuscript, please contact us at cytotrace@gmail.com. 
 
 
