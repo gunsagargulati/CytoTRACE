@@ -12,8 +12,9 @@ iCytoTRACE(datasets)
 \value{
 a list containing
 \itemize{
-\item data: a matrix (genes by single cells) of the corrected gene expression values from Scanorama
-\item CytoTRACE: a numeric vector of the predicted ordering of merged single cells by differentiation status
+\item exprMatrix: a matrix (genes by single cells) of the corrected gene expression values from Scanorama
+\item CytoTRACE: a numeric vector of the predicted ordering of single cells from 1.0 (least differentiated) to 0.0 (most differentiated)
+\item CytoTRACErank: a numeric vector of the ranked predicted ordering of single cells by differentiation status. High ranks correspond to less differentiated cells, while low ranks correspond to more differentiated cells.
 \item GCS: a numeric vector of the merged gene counts signature (geometric mean of the top 200 genes associated with gene counts)
 \item Counts: a numeric vector of the corrected number of genes expressed per single cell (gene counts)
 \item coord: a matrix containing the coordinates for the merged low-dimensional embedding (number of cells x 100 <i>t</i>-SNE components)

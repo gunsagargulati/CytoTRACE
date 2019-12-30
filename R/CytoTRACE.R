@@ -1,4 +1,4 @@
-#' @title cytoTRACE
+#' @title CytoTRACE
 #'
 #' @description This function generates single-cell predictions of differentiation status from scRNA-seq data.
 #' It takes in a matrix of gene expression values where columns are cells and rows are genes.\cr\cr
