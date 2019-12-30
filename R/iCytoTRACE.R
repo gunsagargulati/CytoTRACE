@@ -11,8 +11,9 @@
 #'
 #' @return a list containing
 #' \itemize{
-#' \item data: a matrix (genes by single cells) of the corrected gene expression values from Scanorama
-#' \item CytoTRACE: a numeric vector of the predicted ordering of merged single cells by differentiation status
+#' \item exprMatrix: a matrix (genes by single cells) of the corrected gene expression values from Scanorama
+#' \item CytoTRACE: a numeric vector of the predicted ordering of single cells from 1.0 (least differentiated) to 0.0 (most differentiated)
+#' \item CytoTRACErank: a numeric vector of the ranked predicted ordering of single cells by differentiation status. High ranks correspond to less differentiated cells, while low ranks correspond to more differentiated cells.
 #' \item GCS: a numeric vector of the merged gene counts signature (geometric mean of the top 200 genes associated with gene counts)
 #' \item Counts: a numeric vector of the corrected number of genes expressed per single cell (gene counts)
 #' \item coord: a matrix containing the coordinates for the merged low-dimensional embedding (number of cells x 100 <i>t</i>-SNE components)
@@ -86,21 +87,22 @@ iCytoTRACE <- function(datasets) {
   countsNorm <- lapply(countsOrig, range01)
   countsNorm <- lapply(countsNorm, function(x) cbind(x, x))
 
-  #Run modified scanormaCT to batch correct matrix and gene counts
+  #Run modified scanoramaCT to batch correct matrix and gene counts
   #Create genes_list
   genes_list <- lapply(processedMats, rownames)
+  cell_list <- unlist(lapply(processedMats, colnames))
   #transpose matrices
   processedMats <- lapply(processedMats, t)
 
-  merge <- scanormaCT$merge_datasets(processedMats, genes_list)
-  process <- scanormaCT$process_data(merge[[1]], merge[[2]], hvg = 0L, dimred = 100L)
-  gcalign <- scanormaCT$find_alignments_gc(process[[1]], countsNorm)
-  integrated.corrected.data <- scanormaCT$correct(processedMats, genes_list, return_dimred=TRUE, return_dense = T)
+  merge <- scanoramaCT$merge_datasets(processedMats, genes_list)
+  process <- scanoramaCT$process_data(merge[[1]], merge[[2]], hvg = 0L, dimred = 100L)
+  gcalign <- scanoramaCT$find_alignments_gc(process[[1]], countsNorm)
+  integrated.corrected.data <- scanoramaCT$correct(processedMats, genes_list, return_dimred=TRUE, return_dense = T)
   countsNormCorrected <- unlist(lapply(gcalign, function(x) x[,1]))
   matCorrected <- t(do.call(rbind, integrated.corrected.data[[2]]))
   rownames(matCorrected) <- integrated.corrected.data[[3]]
   mat2 <- matCorrected
-
+  colnames(mat2) <- cell_list
   #Function to identify the most variable genes
   mvg <- function(matn) {
     A <- matn
@@ -167,14 +169,28 @@ iCytoTRACE <- function(datasets) {
 
   gcs_regressed <- regressed(D, gcs2)
   gcs_diffused <- gcs_regressed
-  cytotrace <- rank(gcs_diffused)
+  cytotrace <- cytotrace_ranked <- rank(gcs_diffused)
+  cytotrace <- range01(cytotrace)
+  names(cytotrace) <- names(cytotrace_ranked) <- colnames(mat2)
 
   #Getting plotting coordinates
   m <- do.call(rbind, integrated.corrected.data[[1]])
   m <- m[!rm1,]
 
   #filter
-  filteredCells <- !(unlist(lapply(datasets, colnames)) %in% unlist(lapply(processedMats, rownames))[!rm1])
+  filter <- unlist(lapply(datasets, colnames))[-which(unlist(lapply(datasets, colnames)) %in% colnames(mat2))]
 
-  return(list(data = mat2, CytoTRACE = cytotrace, GCS= gcs2, Counts = countsNormCorrected, coord = m, filteredCells = filter))
+  #Final steps
+  mat2 <- t(data.frame(t(mat2))[unlist(lapply(datasets, colnames)),])
+  cytotrace <- cytotrace[unlist(lapply(datasets, colnames))]
+  cytotrace_ranked <- cytotrace_ranked[unlist(lapply(datasets, colnames))]
+  gcs2 <- gcs2[unlist(lapply(datasets, colnames))]
+  countsNormCorrected <- countsNormCorrected[unlist(lapply(datasets, colnames))]
+
+  colnames(mat2) <- names(cytotrace) <- names(cytotrace_ranked) <- names(gcs2) <- names(countsNormCorrected) <- unlist(lapply(datasets, colnames))
+
+  return(list(exprMatrix = mat2, CytoTRACE = cytotrace, CytoTRACErank = cytotrace_ranked,
+              GCS= gcs2, Counts = countsNormCorrected,
+              coord = m, filteredCells = filter))
 }
+

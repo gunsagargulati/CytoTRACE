@@ -2,8 +2,8 @@ Package: CytoTRACE
 Type: Package
 Title: Prediction of single-cell differentiation states with CytoTRACE (Cellular (Cyto) Trajectory Reconstruction Analysis using gene Counts and Expression)
 Version: 0.1.0
-Author: Gunsagar Gulati
-Maintainer: Gunsagar Gulati <ggulati@stanford.edu>
+Author: Gunsagar S. Gulati
+Maintainer: Gunsagar S. Gulati <ggulati@stanford.edu>
 Description: CytoTRACE is a computational framework that leverages single-cell gene counts, covariant gene expression, and local neighborhoods of transcriptionally similar cells to predict ordered differentiation states from scRNA-seq data. This package predicts the order of cellular differentiation in single-cell RNA-sequencing data.
 Depends: R (>= 3.5.1)
 License: GPL-3
@@ -15,5 +15,11 @@ Imports:
         ccaPP (>= 0.3.2),
         nnls (>= 1.4),
         parallel,
-        reticulate (>= 1.10)
+        reticulate (>= 1.10),
+        ggplot2 (>= 3.0.0),
+        gridExtra (>= 2.3),
+        RColorBrewer (>= 1.1.2),
+        Rtsne (>= 0.15),
+        ggpubr (>= 0.1.7),
+        plyr (>= 1.8.4)
 RoxygenNote: 6.1.1

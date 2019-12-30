@@ -4,22 +4,26 @@
 #' It takes in a matrix of gene expression values where columns are cells and rows are genes.\cr\cr
 #' (Optional) Technical batches can be corrected with ComBat by inputting a character vector of batch
 #' annotations matching the number of columns (cells) in the matrix. Furthermore, for the analysis of
-#' large datasets (>5,000 cells), users can increase the speed performance by enabling a sub-sampling approach for calculation
-#' and using multiple cores
+#' large datasets (>3,000 cells), users can increase the speed performance by enabling a subsampling approach for calculation
+#' and using multiple cores.
 #'
 #' @param mat matrix of gene expression values where columns are cells and rows are genes
 #' @param batch character vector of length equal to the number of columns (cells) in the matrix
-#' @param enableFast boolean indicating whether or not to run CytoTRACE in 'fast mode'
+#' @param enableFast boolean indicating whether or not to run CytoTRACE in 'fast mode' for datasets with >3,000 cells. Fast mode uses a subsampling approach to reduce runtime.
 #' @param ncores integer indicating the number of cores to utilize when enableFast = TRUE
 #' @param subsamplesize integer indicating the number of cells to subsample when enableFast = TRUE
 #'
 #' @return a list containing
 #' \itemize{
-#' \item CytoTRACE: a numeric vector of the predicted ordering of single cells by differentiation status
+#' \item CytoTRACE: a numeric vector of the predicted ordering of single cells from 1.0 (least differentiated) to 0.0 (most differentiated)
+#' \item CytoTRACErank: a numeric vector of the ranked predicted ordering of single cells by differentiation status. High ranks correspond to less differentiated cells, while low ranks correspond to more differentiated cells.
+#' \item cytoGenes: a numeric vector of the Pearson correlation of each gene with CytoTRACE, ordered from highest to lowest
 #' \item GCS: a numeric vector of the gene counts signature (geometric mean of the top 200 genes associated with gene counts)
-#' \item GCSgenes: a numeric vector of the Pearson correlation of each gene with gene counts, ordered from highest to lowest
+#' \item gcsGenes: a numeric vector of the Pearson correlation of each gene with gene counts, ordered from highest to lowest
 #' \item Counts: a numeric vector of the number of genes expressed per single cell (gene counts)
-#' \item filteredCells = a character vector of the names of single cells (columns) that were filtered due to poor quality.
+#' \item filteredCells: a character vector of the names of single cells (columns) that were filtered due to poor quality.
+#' \item exprMatrix: a matrix of gene expression values after the following normalization steps: (i) sequencing depth normalization by rescaling single-cell transcriptomes to transcripts per million (TPM) or counts per million (CPM) (ii) log2-normalization with a pseudo-count of 1, and (iii) Census normalization (Qiu et al., 2017) to convert the gene expression matrix to relative transcript counts by rescaling single-cell transcriptomes to the total number of detectably expressed genes in that cell.
+#'
 #' }
 #'
 #' @author Gunsagar Gulati <cytotrace@gmail.com>
@@ -30,20 +34,27 @@
 #'
 #' @examples
 #' #Use the bone marrow 10x scRNA-seq dataset to run CytoTRACE
-#' results <- cytoTRACE(marrow_10x_expr)
+#' results <- CytoTRACE(marrow_10x_expr)
 #'
 #' #Run this dataset on fast mode using 8 cores
-#' results <- cytoTRACE(marrow_10x_expr, enableFast = TRUE, ncores = 8)
+#' results <- CytoTRACE(marrow_10x_expr, enableFast = TRUE, ncores = 8)
 #'
 #' @export
 
-cytoTRACE <- function(mat, batch = NULL, enableFast = FALSE,
+CytoTRACE <- function(mat, batch = NULL, enableFast = TRUE,
                       ncores = 1,subsamplesize = 1000){
+
+  range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
   #inputs
   a1 <- mat
   a2 <- batch
-
+  if(ncol(mat) < 3000){
+    enableFast = FALSE
+    message("The number of cells in your dataset is less than 3,000. Fast mode has been disabled.")
+    } else {
+  message("The number of cells in your dataset exceeds 3,000. CytoTRACE will now be run in fast mode (see documentation). You can multi-thread this run using the 'ncores' flag. To disable fast mode, please indicate 'enableFast = FALSE'.")
+  }
   #Checkpoint: NAs and poor quality genes
   pqgenes <- is.na(rowSums(mat>0)) | apply(mat, 1, var) == 0
   num_pqgenes <- length(which(pqgenes == TRUE))
@@ -57,7 +68,6 @@ cytoTRACE <- function(mat, batch = NULL, enableFast = FALSE,
     size <- ncol(mat)
   } else if (enableFast == TRUE & subsamplesize < ncol(mat)){
     size <- subsamplesize
-    message("CytoTRACE will be run on fast mode.")
   } else if (enableFast == TRUE & subsamplesize >= ncol(mat)){
     stop("Please choose a subsample size less than the number of cells in dataset.")
   }
@@ -205,13 +215,25 @@ cytoTRACE <- function(mat, batch = NULL, enableFast = FALSE,
   }
   )
 
-  cytotrace <- unlist(cytotrace)
+  cytotrace <- cytotrace_ranked <- unlist(cytotrace)
+  cytotrace <- range01(cytotrace)
+
+  #Calculate genes associated with CytoTRACE
+  cytogenes <- sapply(1:nrow(mat2),
+                          function(x) ccaPP::corPearson(mat2[x,], cytotrace))
+  names(cytogenes) <- rownames(mat2)
+  message("Calculating genes associated with CytoTRACE...")
+
+  #Final steps
   names(cytotrace) <- names(gcs) <- names(counts) <- colnames(mat2)
-  cytotrace <- cytotrace[colnames(a1)]; gcs <- gcs[colnames(a1)]; counts <- counts[colnames(a1)]
-  names(cytotrace) <- names(gcs) <- names(counts) <- colnames(a1)
+  cytotrace <- cytotrace[colnames(a1)]; cytotrace_ranked <- cytotrace_ranked[colnames(a1)]; gcs <- gcs[colnames(a1)]; counts <- counts[colnames(a1)]
+
+  mat2 <- t(data.frame(t(mat2))[colnames(a1),])
+  names(cytotrace) <- names(cytotrace_ranked) <- names(gcs) <- names(counts) <- colnames(mat2) <- colnames(a1)
 
   message("Done")
-  return(list(CytoTRACE = cytotrace, GCS = gcs, GCSgenes = sort(ds2, decreasing = T), Counts = counts, filteredCells = filter))
+  return(list(CytoTRACE = cytotrace, CytoTRACErank = cytotrace_ranked, cytoGenes = sort(cytogenes, decreasing = T), GCS = gcs, gcsGenes = sort(ds2, decreasing = T),
+              Counts = counts, filteredCells = filter, exprMatrix = mat2))
 }
 
 
