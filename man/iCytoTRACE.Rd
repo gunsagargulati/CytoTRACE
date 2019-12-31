@@ -17,7 +17,7 @@ a list containing
 \item CytoTRACErank: a numeric vector of the ranked predicted ordering of single cells by differentiation status. High ranks correspond to less differentiated cells, while low ranks correspond to more differentiated cells.
 \item GCS: a numeric vector of the merged gene counts signature (geometric mean of the top 200 genes associated with gene counts)
 \item Counts: a numeric vector of the corrected number of genes expressed per single cell (gene counts)
-\item coord: a matrix containing the coordinates for the merged low-dimensional embedding (number of cells x 100 <i>t</i>-SNE components)
+\item coord: a matrix containing the coordinates for the merged low-dimensional embedding (number of cells x 100 t-SNE components)
 \item filteredCells = a character vector of the names of single cells (columns) that were filtered due to poor quality.
 }
 }
@@ -32,11 +32,9 @@ integrated gene counts, gene counts signature (GCS), CytoTRACE, and the correct 
 
 #Create a list containing two bone marrow scRNA-seq datasets profiled on different platforms, 10x and Smart-seq2
 datasets <- list(marrow_10x_expr, marrow_plate_expr)
-\\n
+
 #Run iCytoTRACE
-\dontrun{
 results <- iCytoTRACE(datasets)
-}
 }
 \references{
 https://doi.org/10.1101/649848
