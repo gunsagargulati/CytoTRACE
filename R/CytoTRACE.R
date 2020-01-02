@@ -225,7 +225,7 @@ CytoTRACE <- function(mat, batch = NULL, enableFast = TRUE,
   message("Calculating genes associated with CytoTRACE...")
 
   #Final steps
-  names(cytotrace) <- names(gcs) <- names(counts) <- colnames(mat2)
+  names(cytotrace) <- names(cytotrace_ranked) <- names(gcs) <- names(counts) <- colnames(mat2)
   cytotrace <- cytotrace[colnames(a1)]; cytotrace_ranked <- cytotrace_ranked[colnames(a1)]; gcs <- gcs[colnames(a1)]; counts <- counts[colnames(a1)]
 
   mat2 <- t(data.frame(t(mat2))[colnames(a1),])
