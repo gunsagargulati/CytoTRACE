@@ -17,7 +17,7 @@ Imports:
         parallel,
         reticulate (>= 1.10),
         ggplot2 (>= 3.0.0),
-        gridExtra (>= 2.3),
+        egg (>= 0.4.5),
         RColorBrewer (>= 1.1.2),
         Rtsne (>= 0.15),
         ggpubr (>= 0.1.7),

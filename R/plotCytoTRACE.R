@@ -11,9 +11,10 @@
 #' @param gene  (optional) a case-insensitive string corresponding to a gene of interest. The case-insensitive string should match values provided as row names of the original gene expression matrix.
 #' @param colors  (optional) a character vector of colors to be used to create a palette for the plots
 #' @param emb  (optional) a data frame containing two columns corresponding to the 2D embeddings and where the row names match the column names of the original gene expression matrix.
+#' @param outputDir path to output directory where plots and tables will be written. Format should be "/PATH/TO/DIRECTORY/".
 #'
-#' @return a pdf of 2D embedded plots colored by CytoTRACE, and, if provided, phenotype labels, and gene expression.
-#' @return a tab-delimited text file saved to disk containing a table of CytoTRACE values t-SNE embeddings, and, if provided, phenotype labels and gene expression values.
+#' @return a PDF of 2D embedded plots colored by CytoTRACE, and, if provided, phenotype labels, and gene expression.
+#' @return a tab-delimited text file containing a table of CytoTRACE values t-SNE embeddings, and, if provided, phenotype labels and gene expression values.
 #'
 #' @author Gunsagar Gulati <cytotrace@gmail.com>
 #'
@@ -31,9 +32,7 @@
 #'
 #' @export
 
-plotCytoTRACE <- function(cyto_obj = NULL, phenotype = NULL, gene = NULL, colors = NULL, emb = NULL){
-
-  runPlot <- function(cyto_obj, phenotype, gene, colors, emb){
+plotCytoTRACE <- function(cyto_obj = NULL, phenotype = NULL, gene = NULL, colors = NULL, emb = NULL, outputDir = "./"){
 
 mat <- cyto_obj$exprMatrix
 cyto <- cyto_obj$CytoTRACE
@@ -206,9 +205,6 @@ drawPlots <- function(data, colors, gene2) {
       ggplot2::geom_point(ggplot2::aes(colour = Phenotype), size = ptsize)+
       ggplot2::scale_colour_manual(values = cols,
                           guide = ggplot2::guide_legend(frame.colour = "black",
-                                                        title.position="top",
-                                                        title.hjust = 0.5,
-                                                        ncol = 2,
                                                override.aes = list(size = 4)))+
       ggplot2::labs(x = colnames(emb)[1], y = colnames(emb)[2], title = "Phenotype")+
       ggpubr::theme_pubr()+
@@ -219,7 +215,7 @@ drawPlots <- function(data, colors, gene2) {
         axis.title.x = ggplot2::element_text(size = 18),
         axis.title.y = ggplot2::element_text(size = 18),
         axis.text=ggplot2::element_text(size=16),
-        legend.position="top",
+        legend.position="right",
         plot.margin = ggplot2::unit(c(0.5,1,0.5,1), "cm")
       )
   }
@@ -227,35 +223,30 @@ drawPlots <- function(data, colors, gene2) {
   if (!is.null(data$Gene) & sum(data$Gene) != 0) {
     p2 <- ggplot2::ggplot(data, ggplot2::aes(x=emb[,1], y=emb[,2])) +
       ggplot2::geom_point(ggplot2::aes(colour = Gene), size = ptsize)+
-      ggplot2::scale_colour_gradientn(name="Gene expression",
+      ggplot2::scale_colour_gradientn(name="Gene\nexpression",
                              colours = rev(rbPal(50)),
                              guide = ggplot2::guide_colourbar(ticks.colour = "black",
                                                      ticks.linewidth = 1,
-                                                     title.hjust = 0.5,
-                                                     title.position="top",
                                                      frame.colour = "black"))+
       ggplot2::labs(x = colnames(emb)[1], y = colnames(emb)[2], title = bquote(italic(.(gene2))))+
       ggpubr::theme_pubr()+
       ggplot2::theme(
         legend.text = ggplot2::element_text(size = 12),
-        legend.key.width = ggplot2::unit(1.5,"cm"),
         legend.title = ggplot2::element_text(size = 14),
         plot.title = ggplot2::element_text(size = 21, hjust = 0.5),
         axis.title.x = ggplot2::element_text(size = 18),
         axis.title.y = ggplot2::element_text(size = 18),
         axis.text=ggplot2::element_text(size=16),
-        legend.position="top",
+        legend.position="right",
         plot.margin = ggplot2::unit(c(0.5,1,0.5,1), "cm")
       )
   } else if (!is.null(data$Gene) & sum(data$Gene) == 0) {
     p2 <- ggplot2::ggplot(data, ggplot2::aes(x=emb[,1], y=emb[,2])) +
       ggplot2::geom_point(ggplot2::aes(x = emb[,1], y = emb[,2], colour = Gene), size = 0.1)+
-      ggplot2::scale_colour_gradientn(name="Gene expression",
+      ggplot2::scale_colour_gradientn(name="Gene\nexpression",
                              colours = "white",
                              guide = ggplot2::guide_colourbar(ticks.colour = "black",
                                                      ticks.linewidth = 1,
-                                                     title.hjust = 0.5,
-                                                     title.position="top",
                                                      frame.colour = "black"))+
       ggplot2::annotate("text", x = mean(emb[,1]), y = mean(emb[,2]), xmin = min(emb[,1]), xmax = max(emb[,1]),
                ymin = min(emb[,2]), ymax = max(emb[,2]),
@@ -264,13 +255,12 @@ drawPlots <- function(data, colors, gene2) {
       ggpubr::theme_pubr()+
       ggplot2::theme(
         legend.text = ggplot2::element_text(size = 12),
-        legend.key.width = ggplot2::unit(1.5,"cm"),
         legend.title = ggplot2::element_text(size = 14),
         plot.title = ggplot2::element_text(size = 21, hjust = 0.5),
         axis.title.x = ggplot2::element_text(size = 18),
         axis.title.y = ggplot2::element_text(size = 18),
         axis.text=ggplot2::element_text(size=16),
-        legend.position="top",
+        legend.position="right",
         plot.margin = ggplot2::unit(c(0.5,1,0.5,1), "cm")
       )
 
@@ -279,65 +269,49 @@ drawPlots <- function(data, colors, gene2) {
   #CytoTRACE
   p3 <- ggplot2::ggplot(data, ggplot2::aes(x=emb[,1], y=emb[,2])) +
     ggplot2::geom_point(ggplot2::aes(colour = CytoTRACE), size = ptsize)+
-    ggplot2::scale_colour_gradientn(name = "Predicted order",
+    ggplot2::scale_colour_gradientn(name = "Predicted\norder",
                            colours = rev(rbPal(50)),
                            guide = ggplot2::guide_colourbar(ticks.colour = "black",
                                                    ticks.linewidth = 1,
-                                                   title.hjust = 0.5,
-                                                   title.position="top",
                                                    frame.colour = "black"),
                            breaks = seq(0, 1, 0.2),
-                           labels=c("0.0\n(More diff.)", 0.2,0.4, 0.6, 0.8, "1.0\n(Less diff.)"))+
+                           labels=c("0.0 (More diff.)", 0.2,0.4, 0.6, 0.8, "1.0 (Less diff.)"))+
     ggplot2::labs(x = colnames(emb)[1], y = colnames(emb)[2], title = "CytoTRACE")+
     ggpubr::theme_pubr()+
     ggplot2::theme(
       legend.text = ggplot2::element_text(size = 12),
-      legend.key.width = ggplot2::unit(1.5,"cm"),
       legend.title = ggplot2::element_text(size = 14),
       plot.title = ggplot2::element_text(size = 21, hjust = 0.5),
       axis.title.x = ggplot2::element_text(size = 18),
       axis.title.y = ggplot2::element_text(size = 18),
       axis.text=ggplot2::element_text(size=16),
-      legend.position="top",
+      legend.position="left",
       plot.margin = ggplot2::unit(c(0.5,1,0.5,1), "cm")
 
     )
 
-  ##think of ckever code to resize graph based on number of phenotypes
-  numpheno <- length(unique(data$Phenotype))
-  ht1 <- 1+ round(numpheno/2)*0.015
-
   if (!is.null(pheno) & !is.null(gene)){
-    gridExtra::grid.arrange(p3, p1, p2, ncol = 1, heights = c(1.02, ht1, 1))
+    mp <- egg::ggarrange(p3, p1, p2, nrow = 1, newpage = T)
+      ggpubr::ggexport(mp, filename = paste0(outputDir, "CytoTRACE_plot.pdf"),
+                       width = 21, height= 5, verbose = F)
   } else if (!is.null(pheno) & is.null(gene)) {
-    gridExtra::grid.arrange(p3, p1, ncol = 1, heights = c(1.02, ht1))
+   mp <-  egg::ggarrange(p3, p1, nrow = 1)
+   ggpubr::ggexport(mp, filename = paste0(outputDir, "CytoTRACE_plot.pdf"),
+                    width = 14, height= 5, verbose = F)
   } else if (is.null(pheno) & !is.null(gene)) {
-    gridExtra::grid.arrange(p3, p2, ncol = 1, heights = c(1.02, 1))
+    mp <- egg::ggarrange(p3, p2, nrow = 1)
+    ggpubr::ggexport(mp, filename = paste0(outputDir, "CytoTRACE_plot.pdf"),
+                     width = 14, height= 5, verbose = F)
   } else if (is.null(pheno) & is.null(gene)) {
-    p4 <- ggplot2::ggplot()+
-      ggpubr::theme_pubr()
-    gridExtra::grid.arrange(p3,p4, ncol = 1, heights = c(1.02, 1))
+    mp <- egg::ggarrange(p3, nrow = 1)
+    ggpubr::ggexport(mp, filename = paste0(outputDir, "CytoTRACE_plot.pdf"),
+                     width = 7, height= 5, verbose = F)
   }
 
 }
-
 drawPlots(output_data, colors, gene2)
-write.table(output_data, "CytoTRACE_plot_table.txt", sep = "\t", quote = F)
+write.table(output_data, paste0(outputDir, "CytoTRACE_plot_table.txt"), sep = "\t", quote = F)
 }
 
-  if(!is.null(phenotype) & !is.null(gene)){
-    pdf("CytoTRACE_plot.pdf", width = 6, height = 20, useDingbats = FALSE)
-    runPlot(cyto_obj, phenotype, gene, colors, emb)
-    suppressMessages(dev.off())
-  } else if (is.null(phenotype) & is.null(gene)){
-    pdf("CytoTRACE_plot.pdf", width = 6, height = 6.5, useDingbats = FALSE)
-    runPlot(cyto_obj, phenotype, gene, colors, emb)
-    suppressMessages(dev.off())
-  } else {
-    pdf("CytoTRACE_plot.pdf", width = 6, height = 13, useDingbats = FALSE)
-    runPlot(cyto_obj, phenotype, gene, colors, emb)
-    suppressMessages(dev.off())
-    }
-}
 
 
