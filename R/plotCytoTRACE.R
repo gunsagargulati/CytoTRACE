@@ -146,6 +146,7 @@ if(!is.null(emb)){
   tsne.proj <- emb
 } else if (length(grep("coord", names(cyto_obj)))>0){
     emb <- cyto_obj$coord
+    tsne.proj <- emb
   } else {
 n_samples <- ncol(mat)
 perplexity <- if(n_samples > 100) 30 else 10
