@@ -4,8 +4,10 @@
 \name{marrow_plate_expr}
 \alias{marrow_plate_expr}
 \title{Mouse bone marrow differentiation scRNA-seq (10x) expression dataset}
-\format{A data frame where single cells are columns and genes are rows.
-Values represent raw counts.}
+\format{
+A data frame where single cells are columns and genes are rows.
+Values represent raw counts.
+}
 \source{
 GSE109774 and \href{https://github.com/czbiohub/tabula-muris}{Tabula Muris GitHub}
 }

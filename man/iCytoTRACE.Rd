@@ -4,7 +4,7 @@
 \alias{iCytoTRACE}
 \title{integrated CytoTRACE (iCytoTRACE)}
 \usage{
-iCytoTRACE(datasets)
+iCytoTRACE(datasets, enableFast = TRUE, ncores = 1, subsamplesize = 1000)
 }
 \arguments{
 \item{datasets}{list of gene expression matrices where columns are cells and rows are genes}

@@ -36,8 +36,8 @@
 #' #Use the bone marrow 10x scRNA-seq dataset to run CytoTRACE
 #' results <- CytoTRACE(marrow_10x_expr)
 #'
-#' #Run this dataset on fast mode using 8 cores
-#' results <- CytoTRACE(marrow_10x_expr, enableFast = TRUE, ncores = 8)
+#' #Run this dataset on fast mode using 1 core
+#' results <- CytoTRACE(marrow_10x_expr, enableFast = TRUE, ncores = 1)
 #'
 #' @export
 

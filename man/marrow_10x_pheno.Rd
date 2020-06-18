@@ -4,7 +4,9 @@
 \name{marrow_10x_pheno}
 \alias{marrow_10x_pheno}
 \title{Mouse bone marrow differentiation scRNA-seq (10x) phenotype labels}
-\format{A character vector of the phenotype labels of mouse bone marrow cells with names corresponding to the single cell IDs}
+\format{
+A character vector of the phenotype labels of mouse bone marrow cells with names corresponding to the single cell IDs
+}
 \source{
 GSE109774 and \href{https://github.com/czbiohub/tabula-muris}{Tabula Muris GitHub}
 }

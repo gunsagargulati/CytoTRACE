@@ -37,12 +37,13 @@
 
 
 
-iCytoTRACE <- function(datasets) {
+iCytoTRACE <- function(datasets, enableFast = TRUE,
+                       ncores = 1,subsamplesize = 1000) {
   if(!have_scanoramaCT | !have_numpy){
     stop("The necessary python modules are not accessible. This function is disabled. Please follow the instructions in https://github.com/gunsagargulati/CytoTRACE to install the Python packages for this application.")
   }
   #import python libraries
-  scanoramaCT<- reticulate::import('scanoramaCT')
+  suppressWarnings(scanoramaCT<- reticulate::import('scanoramaCT'))
   np <- reticulate::import('numpy')
   range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
@@ -115,11 +116,6 @@ iCytoTRACE <- function(datasets) {
     return(A_filt)
   }
 
-  #Filter out cells not expressing any of the 1000 most variable genes
-  mat2.mvg <- mvg(mat2)
-  rm1 <- colSums(mat2.mvg) == 0
-  mat2 <- mat2[, !rm1]
-  countsNormCorrected <- countsNormCorrected[!rm1]
 
   #Calculate similarity matrix
   similarity_matrix_cleaned <- function(similarity_matrix){
@@ -134,11 +130,49 @@ iCytoTRACE <- function(datasets) {
     return(D)
   }
 
-  D <- similarity_matrix_cleaned(HiClimR::fastCor(mvg(mat2)))
+  if(ncol(mat2) < 10000){
+    enableFast = FALSE
+    message("The number of cells in your integrated dataset is less than 10,000. Fast mode has been disabled.")
+  } else {
+    message("The number of cells in your dataset exceeds 10,000. CytoTRACE will now be run in fast mode (see documentation). You can multi-thread this run using the 'ncores' flag. To disable fast mode, please indicate 'enableFast = FALSE'.")
+  }
+
+  #Subsample routine
+  if(enableFast == FALSE){
+    size <- ncol(mat2)
+  } else if (enableFast == TRUE & subsamplesize < ncol(mat2)){
+    size <- subsamplesize
+  } else if (enableFast == TRUE & subsamplesize >= ncol(mat2)){
+    stop("Please choose a subsample size less than the number of cells in dataset.")
+  }
+
+  chunk <- round(ncol(mat2)/size)
+  subsamples <- split(1:ncol(mat2), sample(factor(1:ncol(mat2) %% chunk)))
+  message(paste("CytoTRACE will be run on", chunk, "sub-sample(s) of approximately",
+                round(mean(unlist(lapply(subsamples, length)))), "cells each using", min(chunk, ncores),"/", ncores, "core(s)"))
+
+  batches <- parallel::mclapply(subsamples, mc.cores = min(chunk, ncores), function(subsample){
+    #Filter out cells not expressing any of the 1000 most variable genes
+    mat2 <- mat2[,subsample]
+    mat2.mvg <- mvg(mat2)
+    rm1 <- colSums(mat2) == 0
+    mat2 <- mat2[, !rm1]
+    countsNormCorrected <- countsNormCorrected[!rm1]
+    D <- similarity_matrix_cleaned(HiClimR::fastCor(mvg(mat2)))
+  return(list(mat2 = mat2,countsNormCorrected = countsNormCorrected, D = D))
+  }
+  )
+  mat2 <- do.call(cbind, lapply(batches, function(x) x$mat2))
+  countsNormCorrected <- do.call(c, lapply(batches, function(x) x$countsNormCorrected))
+  D2 <- batches$D
+
   #Calculate gene counts signature (GCS) or the genes most correlated with gene counts
   ds2 <- sapply(1:nrow(mat2), function(x) ccaPP::corPearson(mat2[x,],countsNormCorrected))
   names(ds2) <- rownames(mat2)
-  gcs2 <- apply(mat2[which(rownames(mat2) %in% names(rev(sort(ds2))[1:200])),],2,mean)
+  gcs <- apply(mat2[which(rownames(mat2) %in% names(rev(sort(ds2))[1:200])),],2,mean)
+
+  samplesize <- unlist(lapply(D2, ncol))
+  gcs2 <- split(gcs, as.numeric(rep(names(samplesize), samplesize)))
 
   #Regress gene counts signature (GCS) onto similarity matrix
   regressed <- function(similarity_matrix_cleaned, score){
@@ -165,11 +199,22 @@ iCytoTRACE <- function(datasets) {
     return(v_curr)
   }
 
-  gcs_regressed <- regressed(D, gcs2)
-  gcs_diffused <- gcs_regressed
-  cytotrace <- cytotrace_ranked <- rank(gcs_diffused)
+  cytotrace <- parallel::mclapply(1:length(D2), mc.cores = ncores, function(i) {
+    gcs_regressed <- regressed(D2[[i]], gcs2[[i]])
+    gcs_diffused <- diffused(D2[[i]], gcs_regressed)
+    cytotrace <- rank(gcs_diffused)
+  }
+  )
+  cytotrace <- cytotrace_ranked <- unlist(cytotrace)
   cytotrace <- range01(cytotrace)
   names(cytotrace) <- names(cytotrace_ranked) <- colnames(mat2)
+
+  #Calculate genes associated with iCytoTRACE
+  cytogenes <- sapply(1:nrow(mat2),
+                      function(x) ccaPP::corPearson(mat2[x,], cytotrace))
+  names(cytogenes) <- rownames(mat2)
+  message("Calculating genes associated with iCytoTRACE...")
+
 
   #Getting plotting coordinates
   m <- do.call(rbind, integrated.corrected.data[[1]])
@@ -186,9 +231,8 @@ iCytoTRACE <- function(datasets) {
   countsNormCorrected <- countsNormCorrected[unlist(lapply(datasets, colnames))]
 
   colnames(mat2) <- names(cytotrace) <- names(cytotrace_ranked) <- names(gcs2) <- names(countsNormCorrected) <- unlist(lapply(datasets, colnames))
-
   return(list(exprMatrix = mat2, CytoTRACE = cytotrace, CytoTRACErank = cytotrace_ranked,
-              GCS= gcs2, Counts = countsNormCorrected,
+              GCS= gcs2, Counts = countsNormCorrected, cytoGenes = cytogenes,
               coord = m, filteredCells = filter))
 }
 

@@ -2,4 +2,5 @@
 
 export(CytoTRACE)
 export(iCytoTRACE)
+export(plotCytoGenes)
 export(plotCytoTRACE)
